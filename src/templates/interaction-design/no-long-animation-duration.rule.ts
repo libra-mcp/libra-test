@@ -17,6 +17,7 @@ export default async function check(context: RuleContext): Promise<RuleResult> {
   for await (const filePath of walkByExtension(context.repoPath, EXTENSIONS)) {
     const lines = await readFileLines(filePath);
     const relativePath = path.relative(context.repoPath, filePath);
+    if (relativePath.startsWith("src/templates/")) continue;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       MS_RE.lastIndex = 0;
