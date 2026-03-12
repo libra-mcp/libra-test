@@ -22,12 +22,15 @@ Multiple templates:
 npx @libra-mcp/libra-test --template baseline-ui --template fixing-accessibility --template fixing-metadata
 ```
 
+**Options:** `--template <name>` (repeatable), `--strict` (exit 1 on warnings too), `--json`, `--list` (show templates).
+
 ## What it does
 
 - **Project mode** (no `--template`): Looks for a `.libra/rules/` folder in the current directory. If present, runs every `.rule.js`, `.rule.ts`, and `.rule.sh` in it (`.rule.ts` is run via tsx); `.rule.md` files are counted as LLM rules (skipped in CLI). If the folder is missing, you’ll get a short message and exit code.
 - **Template mode** (`--template <name>`): Runs predefined static rules from a built-in template (e.g. `baseline-ui`) against the current working directory.
-- **Output:** File-specific violations with paths and line numbers. LLM rules are counted and skipped with a pointer to libra-mcp.com.
-- **Exit code:** Non-zero if any static rule failed.
+- **Output:** File-specific violations with paths and line numbers. Failures (✗) and warnings (⚠) are listed separately. LLM rules are counted and skipped with a pointer to libra-mcp.com.
+- **Severity:** Rules that say “unless requested” (e.g. no gradient, no tracking) use **warn** severity: they are reported under “Warnings” and do not set a non-zero exit code. Use `--strict` to make warnings fail the run (e.g. in CI).
+- **Exit code:** Non-zero if any static rule **failed** (errors). Warnings alone do not fail; add `--strict` to fail on warnings too.
 
 ## Templates
 

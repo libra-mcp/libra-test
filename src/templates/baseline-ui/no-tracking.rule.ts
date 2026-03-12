@@ -7,6 +7,7 @@ const TRACKING = /\btracking-(?:tighter|tight|normal|wide|wider|widest)\b/;
 
 const rule = createLineRule({
   name: "Do not use tracking-* (letter-spacing) unless requested",
+  severity: "warn",
   extensions: [".tsx", ".jsx", ".vue", ".html", ".svelte", ".css", ".scss"],
   check: (line) => {
     const match = line.match(TRACKING);

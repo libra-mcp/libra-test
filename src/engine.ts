@@ -16,8 +16,10 @@ export interface RunResult {
   templateName: string;
   staticPassed: number;
   staticFailed: number;
+  staticWarned: number;
   llmSkipped: number;
   failures: { ruleName: string; result: RuleResult }[];
+  warnings: { ruleName: string; result: RuleResult }[];
   ruleErrors: { ruleId: string; error: string }[];
 }
 
@@ -25,8 +27,10 @@ export interface AggregatedResult {
   templateNames: string[];
   staticPassed: number;
   staticFailed: number;
+  staticWarned: number;
   llmSkipped: number;
   failures: { templateName: string; ruleName: string; result: RuleResult }[];
+  warnings: { templateName: string; ruleName: string; result: RuleResult }[];
   ruleErrors: { templateName: string; ruleId: string; error: string }[];
 }
 
@@ -75,8 +79,10 @@ export async function runProjectMode(repoPath: string): Promise<RunResult> {
     templateName: ".libra/rules",
     staticPassed: 0,
     staticFailed: 0,
+    staticWarned: 0,
     llmSkipped: 0,
     failures: [],
+    warnings: [],
     ruleErrors: [],
   };
 
@@ -108,7 +114,10 @@ export async function runProjectMode(repoPath: string): Promise<RunResult> {
     try {
       const { result: runResult, ruleName } = await runRuleTs(rulePath, context);
       if (runResult.pass) result.staticPassed++;
-      else {
+      else if (runResult.severity === "warn") {
+        result.staticWarned++;
+        result.warnings.push({ ruleName, result: runResult });
+      } else {
         result.staticFailed++;
         result.failures.push({ ruleName, result: runResult });
       }
@@ -131,7 +140,10 @@ export async function runProjectMode(repoPath: string): Promise<RunResult> {
         runRulePath
       );
       if (runResult.pass) result.staticPassed++;
-      else {
+      else if (runResult.severity === "warn") {
+        result.staticWarned++;
+        result.warnings.push({ ruleName, result: runResult });
+      } else {
         result.staticFailed++;
         result.failures.push({ ruleName, result: runResult });
       }
@@ -149,7 +161,10 @@ export async function runProjectMode(repoPath: string): Promise<RunResult> {
     try {
       const { result: runResult, ruleName } = await runRuleSh(rulePath, context);
       if (runResult.pass) result.staticPassed++;
-      else {
+      else if (runResult.severity === "warn") {
+        result.staticWarned++;
+        result.warnings.push({ ruleName, result: runResult });
+      } else {
         result.staticFailed++;
         result.failures.push({ ruleName, result: runResult });
       }
@@ -310,16 +325,21 @@ export async function runTemplate(
 
   const context: RuleContext = { repoPath };
   const failures: { ruleName: string; result: RuleResult }[] = [];
+  const warnings: { ruleName: string; result: RuleResult }[] = [];
   const ruleErrors: { ruleId: string; error: string }[] = [];
   let staticPassed = 0;
   let staticFailed = 0;
+  let staticWarned = 0;
 
   for (const f of staticTs) {
     const rulePath = path.join(templateDir, f);
     try {
       const { result, ruleName } = await runRuleTs(rulePath, context);
       if (result.pass) staticPassed++;
-      else {
+      else if (result.severity === "warn") {
+        staticWarned++;
+        warnings.push({ ruleName, result });
+      } else {
         staticFailed++;
         failures.push({ ruleName, result });
       }
@@ -337,7 +357,10 @@ export async function runTemplate(
     try {
       const { result, ruleName } = await runRuleSh(rulePath, context);
       if (result.pass) staticPassed++;
-      else {
+      else if (result.severity === "warn") {
+        staticWarned++;
+        warnings.push({ ruleName, result });
+      } else {
         staticFailed++;
         failures.push({ ruleName, result });
       }
@@ -354,8 +377,10 @@ export async function runTemplate(
     templateName,
     staticPassed,
     staticFailed,
+    staticWarned,
     llmSkipped: llmMd.length,
     failures,
+    warnings,
     ruleErrors,
   };
 }
@@ -371,8 +396,10 @@ export async function runTemplates(
     templateNames,
     staticPassed: 0,
     staticFailed: 0,
+    staticWarned: 0,
     llmSkipped: 0,
     failures: [],
+    warnings: [],
     ruleErrors: [],
   };
 
@@ -380,9 +407,12 @@ export async function runTemplates(
     const run = await runTemplate(name, repoPath);
     aggregated.staticPassed += run.staticPassed;
     aggregated.staticFailed += run.staticFailed;
+    aggregated.staticWarned += run.staticWarned;
     aggregated.llmSkipped += run.llmSkipped;
     for (const f of run.failures)
       aggregated.failures.push({ templateName: name, ruleName: f.ruleName, result: f.result });
+    for (const w of run.warnings)
+      aggregated.warnings.push({ templateName: name, ruleName: w.ruleName, result: w.result });
     for (const e of run.ruleErrors)
       aggregated.ruleErrors.push({ templateName: name, ruleId: e.ruleId, error: e.error });
   }

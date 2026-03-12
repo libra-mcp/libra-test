@@ -20,6 +20,9 @@ export interface Violation {
   message?: string;
 }
 
+/** Severity of a failed rule. "warn" = report but do not fail exit code (e.g. "unless requested" rules). */
+export type RuleSeverity = "error" | "warn";
+
 export interface RuleResult {
   pass: boolean;
   /** Rule-level message (e.g. "Never use h-screen (use h-dvh)"). */
@@ -28,6 +31,8 @@ export interface RuleResult {
   details?: string;
   /** When present, output "→ file:line" per entry. */
   violations?: Violation[];
+  /** When pass is false: "error" (default) fails the run; "warn" only reports. */
+  severity?: RuleSeverity;
 }
 
 /** Static rule check function exported by .rule.ts files. */

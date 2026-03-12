@@ -8,6 +8,7 @@ const GRADIENT =
 
 const rule = createLineRule({
   name: "Do not use gradients unless requested",
+  severity: "warn",
   extensions: [".tsx", ".jsx", ".vue", ".html", ".svelte", ".css", ".scss"],
   check: (line) => {
     const match = line.match(GRADIENT);

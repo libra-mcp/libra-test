@@ -4,7 +4,7 @@
  */
 
 import path from "path";
-import type { RuleContext, RuleResult, Violation } from "./types.js";
+import type { RuleContext, RuleResult, RuleSeverity, Violation } from "./types.js";
 import { walkByExtension, readFileLines } from "./scan-util.js";
 
 export interface LineRuleOptions {
@@ -16,6 +16,8 @@ export interface LineRuleOptions {
   check: (line: string, lineIndex: number) => string | null | undefined;
   /** Optional directory prefixes to skip (e.g. "src/templates/"). */
   skipPrefixes?: string[];
+  /** Use "warn" for rules that say "unless requested" — reported but do not fail exit code. */
+  severity?: RuleSeverity;
 }
 
 /**
@@ -57,6 +59,7 @@ export function createLineRule(opts: LineRuleOptions): {
       pass: violations.length === 0,
       message: opts.name,
       violations: violations.length > 0 ? violations : undefined,
+      severity: opts.severity,
     };
   };
 
