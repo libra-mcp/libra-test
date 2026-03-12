@@ -4,7 +4,7 @@
 
 import path from "path";
 import type { RuleContext, RuleResult } from "../../types.js";
-import { walkByExtension, readFileLines } from "./scan-util.js";
+import { walkByExtension, readFileLines } from "../../scan-util.js";
 
 export const name = "Avoid arbitrary z-index values";
 

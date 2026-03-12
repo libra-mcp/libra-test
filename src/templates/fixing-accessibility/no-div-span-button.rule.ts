@@ -1,13 +1,13 @@
 /**
- * Icon-only buttons must have aria-label. Baseline-ui rule.
- * Heuristic: line contains <button or <Button and does not contain aria-label.
+ * Do not use div or span as buttons without full keyboard support. fixing-accessibility rule.
+ * Heuristic: div or span with onClick/onclick without role="button".
  */
 
 import path from "path";
 import type { RuleContext, RuleResult } from "../../types.js";
 import { walkByExtension, readFileLines } from "../../scan-util.js";
 
-export const name = "Icon-only buttons must have aria-label";
+export const name = "Do not use div/span as button without role and keyboard support";
 
 const JSX_EXTENSIONS = [".tsx", ".jsx", ".vue"];
 
@@ -20,10 +20,11 @@ export default async function check(context: RuleContext): Promise<RuleResult> {
     const relativePath = path.relative(repoPath, filePath);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (
-        (line.includes("<button") || line.includes("<Button")) &&
-        !line.includes("aria-label")
-      ) {
+      const hasDivOrSpan =
+        line.includes("<div") || line.includes("<span") || line.includes("<Div") || line.includes("<Span");
+      const hasOnClick = line.includes("onClick") || line.includes("onclick");
+      const hasRoleButton = line.includes('role="button"') || line.includes("role={'button'}") || line.includes('role=\'button\'');
+      if (hasDivOrSpan && hasOnClick && !hasRoleButton) {
         violations.push({ file: relativePath, line: i + 1 });
       }
     }

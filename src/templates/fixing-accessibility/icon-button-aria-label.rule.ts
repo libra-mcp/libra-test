@@ -1,5 +1,5 @@
 /**
- * Icon-only buttons must have aria-label. Baseline-ui rule.
+ * Icon-only buttons must have aria-label. fixing-accessibility rule.
  * Heuristic: line contains <button or <Button and does not contain aria-label.
  */
 
@@ -22,7 +22,8 @@ export default async function check(context: RuleContext): Promise<RuleResult> {
       const line = lines[i];
       if (
         (line.includes("<button") || line.includes("<Button")) &&
-        !line.includes("aria-label")
+        !line.includes("aria-label") &&
+        !line.includes("aria-labelledby")
       ) {
         violations.push({ file: relativePath, line: i + 1 });
       }

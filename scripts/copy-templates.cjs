@@ -9,6 +9,19 @@ const path = require("path");
 const srcRoot = path.join(__dirname, "..", "src", "templates");
 const distRoot = path.join(__dirname, "..", "dist", "templates");
 
+function cleanNonTsAssets(distDir) {
+  if (!fs.existsSync(distDir)) return;
+  const entries = fs.readdirSync(distDir, { withFileTypes: true });
+  for (const e of entries) {
+    const p = path.join(distDir, e.name);
+    if (e.isDirectory()) {
+      cleanNonTsAssets(p);
+    } else if (e.name.endsWith(".rule.md") || e.name.endsWith(".rule.sh")) {
+      fs.rmSync(p, { force: true });
+    }
+  }
+}
+
 function copyRecursive(srcDir, distDir) {
   if (!fs.existsSync(srcDir)) return;
   const entries = fs.readdirSync(srcDir, { withFileTypes: true });
@@ -24,4 +37,5 @@ function copyRecursive(srcDir, distDir) {
   }
 }
 
+cleanNonTsAssets(distRoot);
 copyRecursive(srcRoot, distRoot);
