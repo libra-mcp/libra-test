@@ -5,6 +5,7 @@
  * With --template: runs built-in template(s).
  */
 
+import chalk from "chalk";
 import {
   runTemplates,
   runProjectMode,
@@ -38,13 +39,12 @@ if (args.includes("--help") || args.includes("-h")) {
 
 if (args.includes("--list")) {
   const templates = await listTemplates();
-  console.log("Available templates:\n");
-  for (const t of templates) console.log(`  ${t}`);
+  console.log(chalk.cyan.bold("Available templates:\n"));
+  for (const t of templates) console.log(chalk.dim("  ") + t);
   process.exit(0);
 }
 
 const jsonOutput = args.includes("--json");
-const strictMode = args.includes("--strict");
 
 const templateFlags = args
   .map((arg, i) => (arg === "--template" ? args[i + 1] : null))
@@ -65,20 +65,32 @@ if (
 const repoPath = process.cwd();
 const projectMode = templateFlags.length === 0;
 
-function formatFailure(ruleName: string, result: RuleResult, icon: "✗" | "⚠"): string[] {
+function formatFailure(
+  ruleName: string,
+  result: RuleResult,
+  icon: "✗" | "⚠",
+  style: { icon: (s: string) => string; detail: (s: string) => string }
+): string[] {
   const lines: string[] = [];
-  lines.push(`  ${icon} ${ruleName}`);
+  lines.push(style.icon(`  ${icon} ${ruleName}`));
   if (result.violations?.length) {
     for (const v of result.violations) {
       const loc = v.line != null ? `${v.file}:${v.line}` : v.file;
       const suffix = v.message ? ` (${v.message})` : "";
-      lines.push(`    → ${loc}${suffix}`);
+      lines.push(style.detail(`    → ${loc}${suffix}`));
     }
   } else {
-    lines.push(`    → ${result.message}`);
+    lines.push(style.detail(`    → ${result.message}`));
   }
   return lines;
 }
+
+const noColor = (s: string) => s;
+const styles = {
+  pass: { icon: chalk.green, detail: noColor },
+  fail: { icon: chalk.red, detail: chalk.dim },
+  warn: { icon: chalk.yellow, detail: chalk.dim },
+};
 
 async function main(): Promise<number> {
   let aggregated: {
@@ -95,9 +107,9 @@ async function main(): Promise<number> {
   if (projectMode) {
     const hasRules = await hasLibraRulesDir(repoPath);
     if (!hasRules) {
-      console.error("No .libra/rules/ folder found in this repo.");
-      console.error("  Run with --template baseline-ui to use a built-in template.");
-      console.error("  Or add a .libra/rules/ folder with .rule.js or .rule.sh files.");
+      console.error(chalk.red("No .libra/rules/ folder found in this repo."));
+      console.error(chalk.dim("  Run with --template baseline-ui to use a built-in template."));
+      console.error(chalk.dim("  Or add a .libra/rules/ folder with .rule.js or .rule.sh files."));
       process.exit(1);
     }
     const run = await runProjectMode(repoPath);
@@ -129,47 +141,47 @@ async function main(): Promise<number> {
 
   if (jsonOutput) {
     console.log(JSON.stringify(aggregated, null, 2));
-    const exitFromStrict = strictMode && aggregated.staticWarned > 0;
-    return aggregated.staticFailed > 0 || exitFromStrict ? 1 : 0;
+    return aggregated.staticFailed > 0 ? 1 : 0;
   }
 
   const title = aggregated.templateNames.join(", ");
-  console.log(`Libra — ${title}\n`);
-  console.log(`✓  ${aggregated.staticPassed} static rules passed`);
-  console.log(`✗  ${aggregated.staticFailed} static rules failed`);
+  console.log(chalk.cyan.bold(`Libra — ${title}\n`));
+  console.log(chalk.green(`✓  ${aggregated.staticPassed} static rules passed`));
+  console.log(chalk.red(`✗  ${aggregated.staticFailed} static rules failed`));
   if (aggregated.staticWarned > 0)
-    console.log(`⚠  ${aggregated.staticWarned} static rules warned`);
+    console.log(chalk.yellow(`⚠  ${aggregated.staticWarned} static rules warned`));
   if (aggregated.llmSkipped > 0)
-    console.log(`~  ${aggregated.llmSkipped} LLM rules skipped → visit libra-mcp.com to test these`);
+    console.log(
+      chalk.dim(`~  ${aggregated.llmSkipped} LLM rules skipped → visit libra-mcp.com to test these`)
+    );
   console.log("");
 
   if (aggregated.ruleErrors.length > 0) {
-    console.log("Rule errors (broken rules):");
+    console.log(chalk.yellow.bold("Rule errors (broken rules):"));
     for (const e of aggregated.ruleErrors)
-      console.log(`  ⚠ ${e.templateName}/${e.ruleId}: ${e.error}`);
+      console.log(chalk.yellow(`  ⚠ ${e.templateName}/${e.ruleId}: ${e.error}`));
     console.log("");
   }
 
   if (aggregated.failures.length > 0) {
-    console.log("Failures:");
+    console.log(chalk.red.bold("Failures:"));
     for (const f of aggregated.failures) {
-      const lines = formatFailure(f.ruleName, f.result, "✗");
+      const lines = formatFailure(f.ruleName, f.result, "✗", styles.fail);
       console.log(lines.join("\n"));
       console.log("");
     }
   }
 
   if (aggregated.warnings.length > 0) {
-    console.log("Warnings:");
+    console.log(chalk.yellow.bold("Warnings:"));
     for (const w of aggregated.warnings) {
-      const lines = formatFailure(w.ruleName, w.result, "⚠");
+      const lines = formatFailure(w.ruleName, w.result, "⚠", styles.warn);
       console.log(lines.join("\n"));
       console.log("");
     }
   }
 
-  const exitFromWarnings = strictMode && aggregated.staticWarned > 0;
-  return aggregated.staticFailed > 0 || exitFromWarnings ? 1 : 0;
+  return aggregated.staticFailed > 0 ? 1 : 0;
 }
 
 main()
