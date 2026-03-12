@@ -1,30 +1,13 @@
 /**
  * Avoid transition-all for performance and predictability.
  */
+import { createLineRule } from "../../create-line-rule.js";
 
-import path from "path";
-import type { RuleContext, RuleResult } from "../../types.js";
-import { walkByExtension, readFileLines } from "../../scan-util.js";
+const rule = createLineRule({
+  name: "Do not use transition-all",
+  extensions: [".tsx", ".jsx", ".vue", ".html", ".svelte"],
+  check: (line) => (line.includes("transition-all") ? "" : null),
+});
 
-export const name = "Do not use transition-all";
-
-const EXTENSIONS = [".tsx", ".jsx", ".vue", ".html", ".svelte"];
-
-export default async function check(context: RuleContext): Promise<RuleResult> {
-  const violations: { file: string; line?: number; message?: string }[] = [];
-
-  for await (const filePath of walkByExtension(context.repoPath, EXTENSIONS)) {
-    const lines = await readFileLines(filePath);
-    const relativePath = path.relative(context.repoPath, filePath);
-    for (let i = 0; i < lines.length; i++) {
-      if (!lines[i].includes("transition-all")) continue;
-      violations.push({ file: relativePath, line: i + 1 });
-    }
-  }
-
-  return {
-    pass: violations.length === 0,
-    message: name,
-    violations: violations.length ? violations : undefined,
-  };
-}
+export const name = rule.name;
+export default rule.default;

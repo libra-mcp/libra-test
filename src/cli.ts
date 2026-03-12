@@ -5,19 +5,57 @@
  * With --template: runs built-in template(s).
  */
 
-import { runTemplates, runProjectMode, hasLibraRulesDir } from "./engine.js";
+import {
+  runTemplates,
+  runProjectMode,
+  hasLibraRulesDir,
+  listTemplates,
+} from "./engine.js";
 import type { RuleResult } from "./types.js";
 
 const args = process.argv.slice(2);
+
+const HELP_TEXT = `Usage: libra-test [options]
+
+Options:
+  --template <name>   Run a built-in template (repeatable)
+  --list              List available built-in templates
+  --json              Output results as JSON
+  --help, -h          Show this help message
+
+Examples:
+  libra-test                              Run rules from .libra/rules/
+  libra-test --template baseline-ui       Run the baseline-ui template
+  libra-test --template baseline-ui --json  Output as JSON
+  libra-test --list                       Show available templates`;
+
+if (args.includes("--help") || args.includes("-h")) {
+  console.log(HELP_TEXT);
+  process.exit(0);
+}
+
+if (args.includes("--list")) {
+  const templates = await listTemplates();
+  console.log("Available templates:\n");
+  for (const t of templates) console.log(`  ${t}`);
+  process.exit(0);
+}
+
+const jsonOutput = args.includes("--json");
+
 const templateFlags = args
   .map((arg, i) => (arg === "--template" ? args[i + 1] : null))
   .filter((v): v is string => v != null && !v.startsWith("-"));
 
+const knownFlags = new Set(["--template", "--json", "--list", "--help", "-h", "test"]);
 const firstArg = args[0];
-if (firstArg !== undefined && !firstArg.startsWith("-") && firstArg !== "test") {
-  console.error("Usage: libra-test [--template <name> ...]");
-  console.error("  No --template: run rules from .libra/rules/ in the current repo.");
-  console.error("  With --template: run built-in template (e.g. --template baseline-ui).");
+if (
+  firstArg !== undefined &&
+  !firstArg.startsWith("-") &&
+  !knownFlags.has(firstArg) &&
+  !templateFlags.includes(firstArg)
+) {
+  console.error(HELP_TEXT);
   process.exit(1);
 }
 
@@ -76,6 +114,11 @@ async function main(): Promise<number> {
     };
   } else {
     aggregated = await runTemplates(templateFlags, repoPath);
+  }
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(aggregated, null, 2));
+    return aggregated.staticFailed > 0 ? 1 : 0;
   }
 
   const title = aggregated.templateNames.join(", ");

@@ -9,7 +9,6 @@
   },
   "scripts": {
     "build": "tsc && node scripts/copy-templates.cjs",
-    "test": "node --test \"dist/**/*.test.js\" 2>/dev/null || true",
     "prepare": "pnpm run build"
   },
   "engines": {
