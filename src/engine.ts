@@ -38,6 +38,18 @@ function getTemplatesDir(): string {
   return path.join(__dirname, "templates");
 }
 
+/**
+ * List available built-in template names.
+ */
+export async function listTemplates(): Promise<string[]> {
+  const templatesDir = getTemplatesDir();
+  const entries = await readdir(templatesDir, { withFileTypes: true });
+  return entries
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort();
+}
+
 const RULES_DIR = ".libra/rules";
 
 /**
