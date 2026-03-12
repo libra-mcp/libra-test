@@ -6,7 +6,7 @@ import { createLineRule } from "../../create-line-rule.js";
 
 const rule = createLineRule({
   name: "Do not remove focus outline without replacement",
-  extensions: [".css", ".scss", ".tsx", ".jsx", ".vue", ".svelte", ".html"],
+  extensions: [".css", ".scss", ".ts", ".tsx", ".jsx", ".vue", ".svelte", ".html"],
   skipPrefixes: ["src/templates/"],
   check: (line) => {
     const removesOutline =
