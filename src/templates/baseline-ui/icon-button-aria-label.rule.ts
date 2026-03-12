@@ -1,5 +1,6 @@
 /**
  * Icon-only buttons must have aria-label. Baseline-ui rule.
+ * Conservative: flags any button without aria-label (icon-only not detectable from a single line).
  */
 import { createLineRule } from "../../create-line-rule.js";
 

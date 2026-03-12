@@ -3,7 +3,7 @@
  */
 import { createLineRule } from "../../create-line-rule.js";
 
-const Z_ARBITRARY = /z-\[\d+\]/;
+const Z_ARBITRARY = /z-\[[^\]]+\]/;
 
 const rule = createLineRule({
   name: "Avoid arbitrary z-index values",
