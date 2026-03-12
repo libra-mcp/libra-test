@@ -1,6 +1,6 @@
 {
   "name": "@libra-mcp/libra-test",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Zero-config CLI to run static and LLM rules against a codebase — day-one wow moment for Libra",
   "type": "module",
   "main": "dist/cli.js",
