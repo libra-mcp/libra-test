@@ -9,6 +9,24 @@ import { walkByExtension, readFileLines } from "../../scan-util.js";
 export const name = "Button must have accessible name";
 
 const EXTENSIONS = [".html", ".htm", ".tsx", ".jsx", ".vue", ".svelte"];
+const HAS_ACCESSIBLE_NAME = /aria-label\s*=|aria-labelledby\s*=/;
+
+function getOpeningTag(lineIndex: number, lines: string[]): string {
+  let tag = "";
+  for (let j = lineIndex; j < Math.min(lineIndex + 25, lines.length); j++) {
+    tag += lines[j] + " ";
+    if (lines[j].includes(">")) break;
+  }
+  return tag;
+}
+
+function bodyHasText(lineIndex: number, lines: string[]): boolean {
+  for (let j = lineIndex; j < Math.min(lineIndex + 40, lines.length); j++) {
+    if (/\>\s*[^<\s{}]+/.test(lines[j])) return true;
+    if (/<\/(?:button|Button)\s*>/.test(lines[j])) break;
+  }
+  return false;
+}
 
 export default async function check(context: RuleContext): Promise<RuleResult> {
   const violations: { file: string; line?: number; message?: string }[] = [];
@@ -19,9 +37,9 @@ export default async function check(context: RuleContext): Promise<RuleResult> {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!line.includes("<button") && !line.includes("<Button")) continue;
-      if (line.includes("aria-label") || line.includes("aria-labelledby")) continue;
-      const hasText = />\s*[^<\s]+/.test(line) || line.includes("children");
-      if (hasText) continue;
+      const openingTag = getOpeningTag(i, lines);
+      if (HAS_ACCESSIBLE_NAME.test(openingTag)) continue;
+      if (bodyHasText(i, lines)) continue;
       violations.push({ file: relativePath, line: i + 1 });
     }
   }
